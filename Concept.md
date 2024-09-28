@@ -222,7 +222,7 @@ interface CharacterExampleMessage {
 Stores the sender of the message. This **MUST** be either of the following:
 1. "user" - Applications **MUST** add the `{{user}}` macro or the instruct equivalent if the role is a user.
 2. "assistant" - Applications **MUST** add the `{{char}}` macro or the instruct equivalent if the role is a assistant.
-3. "system"
+3. "system" - Applications **SHOULD** handle this sender type as needed.
 
 #### `content`
 Stores the contents of the message. This **MUST** be a string.
