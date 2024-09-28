@@ -28,7 +28,7 @@ For an example of a bot written in Prom V3, see the example bot provided [here](
 Prom V3 may be embedded using traditional V2 embedding methods via a PNG/APNG or JSON file. I cannot guarantee if Prom V3 can work under a CharX (.charx) file type.
 
 ## Macro Requirements
-Applications using Prom V3 must support {{getvar}} and {{setvar}} macros to make and get contents from specific areas. This is primarily done to store scenario data but can store any data whatsoever by the creator of the card.
+Applications using Prom V3 must support {{getvar}} and {{setvar}} macros to make and get contents from specific areas. This is primarily done to store scenario data but can store any data whatsoever by the creator of the card. Be mindful that *for now*, some frontends may not support new lines with this macro.
 
 ## CharacterCard Object
 ```ts
