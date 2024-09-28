@@ -12,13 +12,13 @@
 
 ## JSON Objects in Prom V3 (Character Card V3.1)
 Prom V3 takes what already exists in V2 and RisuAI's V3 and adapts it to be easier to read for application developers to implement in their own codebases without the unnecessary bloat of Risu's `assets` folder (that I have already explained [here](./README.md#assets)) and the incorporation of beneficial features such as:
+.
+1. Combining character info outside the character data card if it's not needed.
+2. Add Point 1 to Group Chats.
+3. Make example messages easier to parse.
+4. Optimize fields in favor of macros
 
-1. Adding the ability for multiple scenarios and/or greetings in one object.
-2. Combining character info outside the character data card if it's not needed.
-3. Add Point 1 to Group Chats.
-4. Make example messages easier to parse.
-
-Due to these optimizations, primarily the new `CharacterScenario` object, V1 and V2 character card readers will not be able to read Prom V3 cards. V3 readers however can read V1/V2 by adapting the fields in V1/V2 to V3 as described in *Deprecated Fields*. V1/V2 readers may be able to adapt V3 entries to V1/V2 types via *Deprecated Fields* but I cannot guarantee everything will be in it (especially with multiple scenarios and/or group scenarios).
+Due to these optimizations, primarily the new `CharacterExampleMessage` object, V1 and V2 character card readers may not not be able to read Prom V3 cards without some code adjustments. V3 readers however can read V1/V2 by adapting the fields in V1/V2 to V3 as described in *Deprecated Fields*. V1/V2 readers may be able to adapt V3 entries to V1/V2 types via *Deprecated Fields* but I cannot guarantee everything will be in it (especially with multiple scenarios and/or group scenarios).
 
 In addition, due to the removal of the `assets` field, any features from RisuAI or other frontends that use that field will not be imported to Prom V3. This *can* be added back by a field addition, but IMO, this is better reserved in `extensions` if it's actually needed (see [CharX](./README.md#charx-charx) for my thoughts).
 
@@ -26,6 +26,9 @@ For an example of a bot written in Prom V3, see the example bot provided [here](
 
 ## Embedding Methods
 Prom V3 may be embedded using traditional V2 embedding methods via a PNG/APNG or JSON file. I cannot guarantee if Prom V3 can work under a CharX (.charx) file type.
+
+## Macro Requirements
+Applications using Prom V3 must support {{getvar}} and {{setvar}} macros to make and get contents from specific areas. This is primarily done to store scenario data but can store any data whatsoever by the creator of the card.
 
 ## CharacterCard Object
 ```ts
@@ -42,9 +45,9 @@ interface CharacterCardV3_1 {
         created_at: number
         updated_at: number
 
-        // (major change) combines first message, alt greetings and scenario as a object array
-        scenarios: Array<CharacterScenario> 
-        group_scenarios: Array<CharacterScenario>
+        // (major change) combines first message and alt greetings as a object array
+        greetings: Array<string> 
+        group_greetings: Array<string>
         example_messages: Array<CharacterExampleMessage> // (major change)
 
         // additional content for backwards compatibility
@@ -72,7 +75,7 @@ This **MUST** be set as `chara_card`
 
 #### `description`
 
-(Same as V1/V2/Risu V3) Stores the description of the character (**NOT** to be confused with `creator_notes`). For some characters, this may also contain all the information of the bot itself (see [Silver Wolf](https://bronya-rand.github.io/reimagined-couscous/chars/[HSR]%20Silver%20Wolf/Silver%20Wolf.json)). This **MUST** be a string.
+(Same as V1/V2/Risu V3) Stores the description of the character (**NOT** to be confused with `creator_notes`). For some characters, this may also contain all the information of the bot itself (see [Silver Wolf](https://bronya-rand.github.io/reimagined-couscous/chars/[HSR]%20Silver%20Wolf/Silver%20Wolf.json)) and/or a scenario directly or via the `getvar` macro (`{{getvar::<KEY NAME HERE>}}`). This **MUST** be a string.
 
 #### `personality`
 
@@ -85,21 +88,21 @@ Stores information about the character such as the version of the card, creator 
 1. This field **MUST** return an empty object if no creator data is present.
 2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterInfo](#characterinfo-object) specification.
 
-#### `scenarios`
+#### `greetings`
 
-Stores several different scenarios and greeting messages available for the character. This **MUST** be a array of `CharacterScenario` objects.
-> This combines `alternate_greetings`, `scenario` and `first_mes` into one object.
+Stores different greeting messages available for the character. Some greetings may include a hidden scenario via the `setvar` macro (`{{setvar::<KEY NAME HERE>::"A scenario"}}`). This **MUST** be a array of strings.
+> This combines `alternate_greetings`, `scenario` and `first_mes` into one field.
 
-1. This field **MUST** return an empty object if no scenarios is present.
-2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterScenario](#characterscenario-object) specification.
+1. This field **MUST** return an empty object if no greetings are present.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** support `setvar` as a macro.
 
-#### `group_scenarios`
+#### `group_greetings`
 
-Stores several different scenarios and greeting messages available for the character that are reserved for group chats. This **MUST** be a array of `CharacterScenario` objects.
-> This combines `alternate_greetings`, `scenario` and `first_mes` into one object for group chats.
+Stores different greeting messages available for the character that are reserved for group chats. Some greetings may include a hidden scenario via the `setvar` macro (`{{setvar::<KEY NAME HERE>::"A scenario"}}`). This **MUST** be a array of strings.
+> This combines `alternate_greetings`, `scenario` and `first_mes` into one field for group chats.
 
-1. This field **MUST** return an empty object if no group scenarios is present.
-2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterScenario](#characterscenario-object) specification.
+1. This field **MUST** return an empty object if no greetings are present.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** support `setvar` as a macro.
 
 #### `created_at`
 
@@ -153,15 +156,15 @@ Deprecated for `type`.
 
 #### `first_mes`
 
-Deprecated for `greetings` in `CharacterScenario`.
+Deprecated for `greetings`.
 
 #### `alternate_greetings`
 
-Deprecated for `greetings` in `CharacterScenario`.
+Deprecated for `greetings`.
 
 #### `scenario`
 
-Deprecated for `scenario` in `CharacterScenario`.
+Deprecated for `getvar` and `setvar` macros.
 
 #### `mes_example`
 
@@ -182,28 +185,6 @@ Moved to `CharacterInfo`.
 #### `creator_notes`
 
 Moved to `CharacterInfo`.
-
-## CharacterScenario Object
-This object handles different scenarios and greeting messages that a user can pick from for chatting with the character.
-```ts
-// New in Prom V3
-interface CharacterScenario {
-    scenario: string
-    greetings: Array<string>
-}
-```
-
-### Field Descriptions
-
-#### `scenario`
-
-Stores the scenario the user and character are involved in. This **MUST** be a string.
-
-#### `greetings`
-Stores the greetings that can be used with the character. THIS **MUST** be an array of strings.
-
-1. This field **MUST** return an empty array if no greetings are present.
-2. The first greeting in the greeting list **SHOULD** be treated as the first message of the character.
 
 ## CharacterExampleMessage Object
 This object handles example messages that a creator can provide to better teach the AI how to speak like the character using example outputs.
