@@ -31,18 +31,18 @@ interface CharacterCardV3_1 {
         name: string
         description: string
         personality: string
-        first_message: string //adapt 'first_mes' to be clearer
-        alternative_greetings: Array<string> //adapt 'alternate_greetings' to be clearer
-        scenario: string
 
         // new in Prom V3
         char_info?: CharacterInfo
-        group_greetings: Array<string>
         created_at: number
         updated_at: number
 
+        // (major change) combines first message, alt greetings and scenario as a object array
+        scenarios: Array<CharacterScenario> 
+        group_scenarios: Array<CharacterScenario>
+
         // additional content for backwards compatibility
-        example_messages: Array<CharacterExampleMessage> //major change for example messages
+        example_messages: Array<CharacterExampleMessage> // (major change)
         system_prompt: string
         post_history_instructions: string
         extensions: Record<string, any>
@@ -73,19 +73,6 @@ This **MUST** be set as `chara_card`
 
 (Same as V1/V2/Risu V3) Stores the personality of the character. This **MUST** be a string.
 
-#### `first_message`
-
-(Same as V1/V2/Risu V3) Stores the first greeting message of the character. This **MUST** be a string.
-
-#### `alternative_greetings`
-
-Stores additional greetings that can be used with the character. THIS **MUST** be an array of strings.
-> If no alternative greetings are provided, this field **MUST** return a blank array.
-
-#### `scenario`
-
-(Same as V1/V2/Risu V3) Stores the scenario the user and character are involved in. This **MUST** be a string.
-
 #### `char_info` 
 
 Stores information about the character such as the version of the card, creator notes and information and tags. This **MUST** be a `CharacterInfo` object. 
@@ -93,10 +80,21 @@ Stores information about the character such as the version of the card, creator 
 1. This field **MUST** return an empty object if no creator data is present.
 2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterInfo](#characterinfo-object) specification.
 
-#### `group_greetings`
+#### `scenarios`
 
-Stores greetings that are reserved for group chats. THIS **MUST** be an array of strings.
-> If no group greetings are provided, this field **MUST** return a blank array.
+Stores several different scenarios and greeting messages available for the character. This **MUST** be a array of `CharacterScenario` objects.
+> This combines `alternate_greetings`, `scenario` and `first_mes` into one object.
+
+1. This field **MUST** return an empty object if no scenarios is present.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterScenario](#characterscenario-object) specification.
+
+#### `group_scenarios`
+
+Stores several different scenarios and greeting messages available for the character that are reserved for group chats. This **MUST** be a array of `CharacterScenario` objects.
+> This combines `alternate_greetings`, `scenario` and `first_mes` into one object for group chats.
+
+1. This field **MUST** return an empty object if no group scenarios is present.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterScenario](#characterscenario-object) specification.
 
 #### `created_at`
 
@@ -150,11 +148,15 @@ Deprecated for `type`.
 
 #### `first_mes`
 
-Deprecated for `first_message`.
+Deprecated for `greetings` in `CharacterScenario`.
 
 #### `alternate_greetings`
 
-Deprecated for `alternative_greetings`.
+Deprecated for `greetings` in `CharacterScenario`.
+
+#### `scenario`
+
+Deprecated for `scenario` in `CharacterScenario`.
 
 #### `mes_example`
 
@@ -175,6 +177,28 @@ Moved to `CharacterInfo`.
 #### `creator_notes`
 
 Moved to `CharacterInfo`.
+
+## CharacterScenario Object
+This object handles example messages that a creator can provide to better teach the AI how to speak like the character using example outputs.
+```ts
+// New in Prom V3
+interface CharacterScenario {
+    scenario: string
+    greetings: Array<string>
+}
+```
+
+### Field Descriptions
+
+#### `scenario`
+
+Stores the scenario the user and character are involved in. This **MUST** be a string.
+
+#### `greetings`
+Stores the greetings that can be used with the character. THIS **MUST** be an array of strings.
+
+1. This field **MUST** return an empty array if no greetings are present.
+2. The first greeting in the greeting list **SHOULD** be treated as the first message of the character.
 
 ## CharacterExampleMessage Object
 This object handles example messages that a creator can provide to better teach the AI how to speak like the character using example outputs.
@@ -236,16 +260,17 @@ Stores any notes about the character from the character creator. This **MUST** b
 
 ## CharacterBookV2 Object
 ```ts
+// New in Prom V3
 interface CharacterBookV2 {
     type: 'chara_book'
-    spec_version: '2.0' // new in Prom V3
+    spec_version: '2.0' // (New)
     name?: string
     description?: string
     scan_depth?: number 
     token_budget?: number
     recursive_scanning?: boolean
     extensions: Record<string, any>
-    entries: Array<CharacterEntry> // new in Prom V3
+    entries: Array<CharacterEntry> // (New)
 }
 ```
 
