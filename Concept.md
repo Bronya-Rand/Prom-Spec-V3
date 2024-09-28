@@ -45,13 +45,13 @@ interface CharacterCardV3_1 {
         // (major change) combines first message, alt greetings and scenario as a object array
         scenarios: Array<CharacterScenario> 
         group_scenarios: Array<CharacterScenario>
+        example_messages: Array<CharacterExampleMessage> // (major change)
 
         // additional content for backwards compatibility
-        example_messages: Array<CharacterExampleMessage> // (major change)
         system_prompt: string
         post_history_instructions: string
         extensions: Record<string, any>
-        character_book?: CharacterBook
+        character_book?: CharacterBookV2
     }
 }
 ```
