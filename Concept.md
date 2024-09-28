@@ -184,7 +184,7 @@ Moved to `CharacterInfo`.
 Moved to `CharacterInfo`.
 
 ## CharacterScenario Object
-This object handles example messages that a creator can provide to better teach the AI how to speak like the character using example outputs.
+This object handles different scenarios and greeting messages that a user can pick from for chatting with the character.
 ```ts
 // New in Prom V3
 interface CharacterScenario {
