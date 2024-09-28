@@ -11,16 +11,21 @@
 - (Same as X): The logic of this field is the same as the following previous specifications.
 
 ## JSON Objects in Prom V3 (Character Card V3.1)
-Prom V3 takes what already exists in V2 and RisuAI's V3 and adapts it to be easier to read for application developers to implement in their own codebases with better descriptions and removes the unnecessary need for the `assets` field. In addition, there are a few core changes to some fields to better suit application development easier. 
+Prom V3 takes what already exists in V2 and RisuAI's V3 and adapts it to be easier to read for application developers to implement in their own codebases without the unnecessary bloat of Risu's `assets` folder (that I have already explained [here](./README.md#assets)) and the incorporation of beneficial features such as:
 
-This proposal does mean that V1/V2 readers will not be able to read Prom V3 files, but due to how clean the code can be read, can be adapted for said readers to work on V1/V2 systems (with `example_messages` and `character_book` possibly being the only exception to this rule).
+1. Adding the ability for multiple scenarios and/or greetings in one object.
+2. Combining character info outside the character data card if it's not needed.
+3. Add Point 1 to Group Chats.
+4. Make example messages easier to parse.
 
-In addition, due to the removal of `assets`, any features from RisuAI or other frontends that use that field will no longer work. This *can* be added back to 3.1, but with what I wrote in the [README](./README.md), I will not include it in Prom V3.
+Due to these optimizations, primarily the new `CharacterScenario` object, V1 and V2 character card readers will not be able to read Prom V3 cards. V3 readers however can read V1/V2 by adapting the fields in V1/V2 to V3 as described in *Deprecated Fields*. V1/V2 readers may be able to adapt V3 entries to V1/V2 types via *Deprecated Fields* but I cannot guarantee everything will be in it (especially with multiple scenarios and/or group scenarios).
+
+In addition, due to the removal of the `assets` field, any features from RisuAI or other frontends that use that field will not be imported to Prom V3. This *can* be added back by a field addition, but IMO, this is better reserved in `extensions` if it's actually needed (see [CharX](./README.md#charx-charx) for my thoughts).
 
 For an example of a bot written in Prom V3, see the example bot provided [here](./Example%20Bot.json).
 
 ## Embedding Methods
-Prom V3 may be embedded using traditional V2 embedding methods via a PNG or JSON.
+Prom V3 may be embedded using traditional V2 embedding methods via a PNG/APNG or JSON file. I cannot guarantee if Prom V3 can work under a CharX (.charx) file type.
 
 ## CharacterCard Object
 ```ts
@@ -262,7 +267,7 @@ Stores any notes about the character from the character creator. This **MUST** b
 ```ts
 // New in Prom V3
 interface CharacterBookV2 {
-    type: 'chara_book'
+    type: 'chara_book' // (New)
     spec_version: '2.0' // (New)
     name?: string
     description?: string
