@@ -58,7 +58,7 @@ interface CharacterLocalAsset {
 
 > FYI that this is for original creations. Including copyrighted works may result in DMCAs from corporations or others without explicit approval.
 
-### File Descriptions
+#### File Descriptions
 
 ##### `type`
 
@@ -67,11 +67,11 @@ Stores the asset type. This **MUST** be a string. Applications **SHOULD** dictat
 1. Applications **MUST** state what file types they support for given tags.
 2. Applications **MAY** impose restrictions of importation, however this may break some ZIPs unnecessarily.
 
-#### `path`
+##### `path`
 
 Stores the path to the asset (primarily the folder). This **MUST** be a string.
 
-#### `name`
+##### `name`
 
 A alternative name to ID the asset folder (for say multiple sprites, backgrounds). This **MUST** be a string but is **OPTIONAL**.
 
@@ -541,7 +541,7 @@ interface CharacterAsset {
 
 ### Field Description
 
-##### `type`
+#### `type`
 
 Stores the asset type. This **MUST** be a string. Applications **SHOULD** dictate what types they accept here, but the common that **SHOULD** apply are `sprites`, `bg` (background), `bgm` (music), `sfx` (sound effects), and `models`.
 
