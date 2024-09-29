@@ -18,7 +18,7 @@ Prom V3 takes what already exists in V2 and RisuAI's V3 and adapts it to be easi
 3. Make example messages easier to parse.
 4. Optimize fields in favor of macros
 
-Due to these optimizations, primarily the new `CharacterExampleMessage` object, V1 and V2 character card readers may not not be able to read Prom V3 cards without some code adjustments. V3 readers however can read V1/V2 by adapting the fields in V1/V2 to V3 as described in *Deprecated Fields*. V1/V2 readers may be able to adapt V3 entries to V1/V2 types via *Deprecated Fields* but I cannot guarantee everything will be in it (especially with multiple scenarios and/or group scenarios).
+Due to these optimizations, primarily the new `CharacterExampleMessage` and `CharacterGreetings` object, V1 and V2 character card readers may not not be able to read Prom V3 cards without some code adjustments. V3 readers however can read V1/V2 by adapting the fields in V1/V2 to V3 as described in *Deprecated Fields*. V1/V2 readers may be able to adapt V3 entries to V1/V2 types via *Deprecated Fields* but I cannot guarantee everything will be in it (especially with multiple scenarios and/or group scenarios).
 
 In addition, due to the removal of the `assets` field, any features from RisuAI or other frontends that use that field will not be imported to Prom V3. This *can* be added back by a field addition, but IMO, this is better reserved in `extensions` if it's actually needed (see [CharX](./README.md#charx-charx) for my thoughts).
 
@@ -40,14 +40,8 @@ interface CharacterCardV3_1 {
         description: string
         personality: string
 
-        // new in Prom V3
-        char_info?: CharacterInfo
-        created_at: number
-        updated_at: number
-
         // (major change) combines first message and alt greetings as a object array
-        greetings: Array<string> 
-        group_greetings: Array<string>
+        greetings: CharacterGreetings
         example_messages: Array<CharacterExampleMessage> // (major change)
 
         // additional content for backwards compatibility
@@ -56,6 +50,8 @@ interface CharacterCardV3_1 {
         extensions: Record<string, any>
         character_book?: CharacterBookV2
     }
+    // new in Prom V3
+    metadata: CharacterInfo
 }
 ```
 
@@ -69,6 +65,14 @@ This **MUST** be set as `chara_card`
 
 (Same as V1/V2/Risu V3) For Prom V3.1, this **MUST** be set as `"3.1"`.
 
+#### `metadata`
+
+Stores information regarding the creator of the character, notes from the creator, character version, etc. This **MUST** be a `CharacterInfo` object.
+1. This field **MUST** return an empty object if no greetings are present.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterInfo](#characterinfo-object) specification.
+
+### Data Field 
+
 #### `name`
 
 (Same as V1/V2/Risu V3) Stores the name of the character. This **MUST** be a string.
@@ -81,20 +85,13 @@ This **MUST** be set as `chara_card`
 
 (Same as V1/V2/Risu V3) Stores the personality of the character. This **MUST** be a string.
 
-#### `char_info` 
-
-Stores information about the character such as the version of the card, creator notes and information and tags. This **MUST** be a `CharacterInfo` object. 
-
-1. This field **MUST** return an empty object if no creator data is present.
-2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterInfo](#characterinfo-object) specification.
-
 #### `greetings`
 
-Stores different greeting messages available for the character. Some greetings may include a hidden scenario via the `setvar` macro (`{{setvar::<KEY NAME HERE>::"A scenario"}}`). This **MUST** be a array of strings.
-> This combines `alternate_greetings`, `scenario` and `first_mes` into one field.
+Stores different greeting messages available for the character. Some greetings may include a hidden scenario via the `setvar` macro (`{{setvar::<KEY NAME HERE>::"A scenario"}}`). This **MUST** be a `CharacterGreetings` object.
+> This combines `alternate_greetings`, `scenario` and `first_mes` and adds group greetings into one field.
 
 1. This field **MUST** return an empty object if no greetings are present.
-2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** support `setvar` as a macro.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** support `setvar` as a macro and follow the [CharacterGreetings](#charactergreetings-object) specification.
 
 #### `group_greetings`
 
@@ -103,18 +100,6 @@ Stores different greeting messages available for the character that are reserved
 
 1. This field **MUST** return an empty object if no greetings are present.
 2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** support `setvar` as a macro.
-
-#### `created_at`
-
-Stores the timestamp (in Unix time) of when the character was first created. This **MUST** be a number.
-1. This field **MUST** not be modified after character creation.
-2. This field **MUST** return a Unix timestamp (in seconds) with the timezone set as UTC.
-
-#### `updated_at`
-
-Stores the timestamp (in Unix time) of when the character was last updated. This **MUST** be a number.
-1. This field **MUST** be modified if a character change has occured.
-2. This field **MUST** return a Unix timestamp (in seconds) with the timezone set as UTC.
 
 #### `example_messages`
 
@@ -186,30 +171,8 @@ Moved to `CharacterInfo`.
 
 Moved to `CharacterInfo`.
 
-## CharacterExampleMessage Object
-This object handles example messages that a creator can provide to better teach the AI how to speak like the character using example outputs.
-```ts
-// New in Prom V3
-interface CharacterExampleMessage {
-    role: "user" | "assistant" | "system"
-    content: string
-}
-```
-
-### Field Descriptions
-
-#### `role`
-
-Stores the sender of the message. This **MUST** be either of the following:
-1. "user" - Applications **MUST** add the `{{user}}` macro or the instruct equivalent if the role is a user.
-2. "assistant" - Applications **MUST** add the `{{char}}` macro or the instruct equivalent if the role is a assistant.
-3. "system" - Applications **SHOULD** handle this sender type as needed.
-
-#### `content`
-Stores the contents of the message. This **MUST** be a string.
-
 ## CharacterInfo Object
-This object handles character metadata more efficiently, making the data field in CharacterCardV3_1 more compact and easier to read.
+This field handles character metadata more efficiently, making the data field in [CharacterCardV3_1](#charactercard-object) more compact and easier to read.
 ```ts
 // New in Prom V3
 interface CharacterInfo {
@@ -218,10 +181,13 @@ interface CharacterInfo {
     source: string
     tags: Array<string>
     creator_notes: string
+    created_at?: number
+    updated_at?: number
 }
 ```
 
 ### Field Descriptions
+
 #### `creator`
 
 Stores the name of the person who created the character. This **MUST** be a string.
@@ -243,6 +209,64 @@ Stores the tags associated with the character. This **MUST** be a array of strin
 
 Stores any notes about the character from the character creator. This **MUST** be a string. 
 > Applications **MUST** show at least show one sentence of the creator notes.
+
+#### `created_at`
+
+Stores the timestamp (in Unix time) of when the character was first created. This **MUST** be a number or undefined.
+1. This field **MUST** not be modified after character creation.
+2. This field **MUST** return a Unix timestamp (in seconds) with the timezone set as UTC or undefined if the application does not support timestamp recording.
+
+#### `updated_at`
+
+Stores the timestamp (in Unix time) of when the character was last updated. This **MUST** be a number or undefined.
+1. This field **MUST** be modified if a character change has occured.
+2. This field **MUST** return a Unix timestamp (in seconds) with the timezone set as UTC or undefined if the application does not support timestamp recording.
+
+## CharacterGreetings Object
+This object handles greeting messages a character can have in a chat, whether the chat is a solo chat (user to bot) or group chat (user to several bots).
+```ts
+// New in Prom V3
+interface CharacterGreetings {
+    solo: Array<string>
+    group: Array<string>
+}
+```
+
+### Field Descriptions
+
+#### `solo`
+
+Stores greeting messages of solo chats. This **MUST** be a array of strings.
+1. This field **MUST** return an empty array if no greeting messages are present.
+2. The first message in the array **SHOULD** be treated as the first message displayed.
+
+
+#### `group`
+Stores greeting messages of group chats. This **MUST** be a array of strings.
+1. This field **MUST** return an empty array if no greeting messages are present.
+2. The first message in the array **SHOULD** be treated as the first message displayed.
+
+## CharacterExampleMessage Object
+This object handles example messages that a creator can provide to better teach the AI how to speak like the character using example outputs.
+```ts
+// New in Prom V3
+interface CharacterExampleMessage {
+    role: "user" | "assistant" | "system"
+    content: string
+}
+```
+
+### Field Descriptions
+
+#### `role`
+
+Stores the sender of the message. This **MUST** be either of the following:
+1. "user" - Applications **MUST** add the `{{user}}` macro or the instruct equivalent if the role is a user.
+2. "assistant" - Applications **MUST** add the `{{char}}` macro or the instruct equivalent if the role is a assistant.
+3. "system" - Applications **SHOULD** handle this sender type as needed.
+
+#### `content`
+Stores the contents of the message. This **MUST** be a string.
 
 ## CharacterBookV2 Object
 ```ts
