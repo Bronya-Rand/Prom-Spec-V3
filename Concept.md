@@ -51,7 +51,7 @@ interface CharacterCardV3_1 {
         character_book?: CharacterBookV2
     }
     // new in Prom V3
-    metadata: CharacterInfo
+    metadata?: CharacterInfo
 }
 ```
 
@@ -67,8 +67,8 @@ This **MUST** be set as `chara_card`
 
 #### `metadata`
 
-Stores information regarding the creator of the character, notes from the creator, character version, etc. This **MUST** be a `CharacterInfo` object.
-1. This field **MUST** return an empty object if no greetings are present.
+Stores information regarding the creator of the character, notes from the creator, character version, etc. This **MUST** be a `CharacterInfo` object or undefined.
+1. This field **MUST** return an empty object if no metadata are present.
 2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterInfo](#characterinfo-object) specification.
 
 ### Data Field 
@@ -240,7 +240,6 @@ Stores greeting messages of solo chats. This **MUST** be a array of strings.
 1. This field **MUST** return an empty array if no greeting messages are present.
 2. The first message in the array **SHOULD** be treated as the first message displayed.
 
-
 #### `group`
 Stores greeting messages of group chats. This **MUST** be a array of strings.
 1. This field **MUST** return an empty array if no greeting messages are present.
@@ -326,7 +325,7 @@ Stores the entries contained in the lorebook. This **MUST** be an array of `Char
 2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterEntry](#characterentry-object) specification.
 
 
-### CharacterEntry Object
+## CharacterEntry Object
 ```ts
 // New in Prom V3
 interface CharacterEntry {
