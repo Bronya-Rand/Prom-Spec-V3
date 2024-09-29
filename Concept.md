@@ -10,6 +10,93 @@
 - Application: The application that uses the Prom V3 specification.
 - (Same as X): The logic of this field is the same as the following previous specifications.
 
+## Embedding Methods
+Prom V3 may be embedded using traditional V2 embedding methods via a PNG/APNG or JSON file as well as a structured ZIP.
+
+### Structured ZIP (for Local Assets)
+The structure of the ZIP **MUST** be as followed overall:
+```
+- image.png
+- data.json
+```
+
+Asset data **MUST** have the following data added
+```
+- assets.jsonl
+```
+
+An idea of how this would look like is as such:
+
+```
+sprites
+   |_____ admiration.png
+bgm
+   |_____ ocean.mp3
+sounds
+   |_____ blip.ogg
+models
+   |_____ model.mmd
+- assets.jsonl
+- data.json
+- image.png
+```
+
+### `assets.jsonl`
+
+This JSONL stores a list of tags and associated folders corresponding to it:
+```ts
+interface CharacterLocalAsset {
+    type: string
+    path: string
+    name?: string
+}
+```
+1. This file is **OPTIONAL** and only exists if a user provided assets and has defined it. 
+2. ZIPs with assets but are missing this JSON **SHOULD** be treated as user error.
+3. **APPLICATIONS ARE NOT REQUIRED** to support some if not all assets if they do not support it.
+4. **APPLICATIONS ARE NOT REQUIRED** to store this file with assets.
+
+> FYI that this is for original creations. Including copyrighted works may result in DMCAs from corporations or others without explicit approval.
+
+#### File Descriptions
+
+##### `type`
+
+Stores the asset type. This **MUST** be a string. Applications **SHOULD** dictate what types they accept here, but the common that **SHOULD** apply are `sprites`, `bg` (background), `bgm` (music), `sfx` (sound effects), and `models`.
+
+1. Applications **MUST** state what file types they support for given tags.
+2. Applications **MAY** impose restrictions of importation, however this may break some ZIPs unnecessarily.
+
+##### `path`
+
+Stores the path to the asset (primarily the folder). This **MUST** be a string.
+
+##### `name`
+
+A alternative name to ID the asset folder (for say multiple sprites, backgrounds). This **MUST** be a string but is **OPTIONAL**.
+
+A example of a asset JSON can be seen [here](./assets.jsonl).
+
+### `data.json`
+
+This contains the [`CharacterCardV3_1`](#charactercard-object) data of the card itself. This **MUST** be a `CharacterCardV3_1` JSON file.
+
+### `image.png`
+
+This contains the image of the character card. This **MUST** be a PNG.
+> Applications **SHOULD** ask the user to import the card with said image.
+
+### Accessing the ZIP
+
+Applications **SHOULD** open the ZIP file in read-only mode. Applications **CAN** then store a temporary variable association to the ZIP contents to either
+
+1. Extract assets to the Application data.
+2. Access content on a site-end via frontend tools.
+3. Extract assets to a backend storage provider.
+4. Extract the character image and data JSON to import to the Application.
+
+This is not a exhaustive list, but an idea on what can be done with a opened ZIP.
+
 ## JSON Objects in Prom V3 (Character Card V3.1)
 Prom V3 takes what already exists in V2 and RisuAI's V3 and adapts it to be easier to read for application developers to implement in their own codebases without the unnecessary bloat of Risu's `assets` folder (that I have already explained [here](./README.md#assets)) and the incorporation of beneficial features such as:
 .
@@ -23,9 +110,6 @@ Due to these optimizations, primarily the new `CharacterExampleMessage` and `Cha
 In addition, due to the removal of the `assets` field, any features from RisuAI or other frontends that use that field will not be imported to Prom V3. This *can* be added back by a field addition, but IMO, this is better reserved in `extensions` if it's actually needed (see [CharX](./README.md#charx-charx) for my thoughts).
 
 For an example of a bot written in Prom V3, see the example bot provided [here](./Example%20Bot.json).
-
-## Embedding Methods
-Prom V3 may be embedded using traditional V2 embedding methods via a PNG/APNG or JSON file. I cannot guarantee if Prom V3 can work under a CharX (.charx) file type.
 
 ## Macro Requirements
 Applications using Prom V3 must support {{getvar}} and {{setvar}} macros to make and get contents from specific areas. This is primarily done to store scenario data but can store any data whatsoever by the creator of the card. Be mindful that *for now*, some frontends may not support new lines with this macro.
@@ -47,11 +131,14 @@ interface CharacterCardV3_1 {
         // additional content for backwards compatibility
         system_prompt: string
         post_history_instructions: string
-        extensions: Record<string, any>
         character_book?: CharacterBookV2
     }
     // new in Prom V3
     metadata?: CharacterInfo
+    external?: {
+        appdata?: Record<string, any>, //rename from 'extensions'
+        assets?: Array<CharacterAsset>
+    }
 }
 ```
 
@@ -70,6 +157,18 @@ This **MUST** be set as `chara_card`
 Stores information regarding the creator of the character, notes from the creator, character version, etc. This **MUST** be a `CharacterInfo` object or undefined.
 1. This field **MUST** return an empty object if no metadata are present.
 2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterInfo](#characterinfo-object) specification.
+
+#### `external`
+
+Stores external assets and app data. This **MUST** be a object with either AppData records and/or a array of `CharacterAsset` objects.
+
+1. This field **MUST** return an empty object if no external content are present.
+2. **ALL APPLICATIONS, CHARACTER EDITORS, ETC. MUST** follow the [CharacterAsset](#characterinfo-object) and V2 Extension specifications (with the new field rename).
+3. The `appdata` field **MUST** return an empty object if no additional content is needed to be written.
+4. The `appdata` field **MAY** contain any arbitrary JSON key-value pair.
+5. Character Editors **MUST NOT** destroy key-value pairs that already exist in the `appdata` field.
+6. Applications **MAY** store any object data in the `appdata` field.
+7. Applications **SHOULD** namespace keys that they use to avoid name conflicts in the `appdata` i.e. `"agnai/voice": /* ... */` or `"agnai_voice": /* ... */` or `"agnai": { "voice": /* ... */ }"`.
 
 ### Data Field 
 
@@ -114,16 +213,6 @@ Stores example messages to teach the AI how to interact with the user as the cha
 #### `post_history_instructions`
 
 (Same as V2) Stores the "jailbreak" used by the character when sending messages to the AI model. Replaces the frontend jailbreak (if in use). This **MUST** be a string.
-
-#### `extensions`
-
-(Same as V2) Stores additional information from content creators, sites, character editors, apps, etc.
-
-1. This field **MUST** return an empty object if no additional content is needed to be written.
-2. This field **MAY** contain any arbitrary JSON key-value pair.
-3. Character Editors **MUST NOT** destroy key-value pairs that already exist in the field.
-4. Applications **MAY** store any object data in this field.
-5. Applications **SHOULD** namespace keys that they use to avoid name conflicts i.e. `"agnai/voice": /* ... */` or `"agnai_voice": /* ... */` or `"agnai": { "voice": /* ... */ }"`.
 
 #### `character_book`
 
@@ -170,6 +259,10 @@ Moved to `CharacterInfo`.
 #### `creator_notes`
 
 Moved to `CharacterInfo`.
+
+#### `extensions`
+
+Moved to `extensions` in the `external` field.
 
 ## CharacterInfo Object
 This field handles character metadata more efficiently, making the data field in [CharacterCardV3_1](#charactercard-object) more compact and easier to read.
@@ -268,6 +361,7 @@ Stores the sender of the message. This **MUST** be either of the following:
 Stores the contents of the message. This **MUST** be a string.
 
 ## CharacterBookV2 Object
+This object handles embedded character books (lorebooks).
 ```ts
 // New in Prom V3
 interface CharacterBookV2 {
@@ -278,7 +372,9 @@ interface CharacterBookV2 {
     scan_depth?: number 
     token_budget?: number
     recursive_scanning?: boolean
-    extensions: Record<string, any>
+    external?: {
+        appdata: Record<string, any>
+    }
     entries: Array<CharacterEntry> // (New)
 }
 ```
@@ -313,9 +409,16 @@ For Prom V3.1, this **MUST** be set as `"2.0"`.
 
 Determines if a application can recursively scan the lorebook. This **MUST** be a boolean.
 
-#### `extensions`
+#### `external`
 
-Stores additional information from content creators, sites, character editors, apps, etc. Same rule applies here as `extensions` in [CharacterCardV3_1](#extensions).
+Stores additional information from content creators, sites, character editors, apps, etc. This **MUST** be a object with AppData records.
+
+1. This field **MUST** return an empty object if no external content are present.
+2. The `appdata` field **MUST** return an empty object if no additional content is needed to be written.
+3. The `appdata` field **MAY** contain any arbitrary JSON key-value pair.
+4. Character Editors **MUST NOT** destroy key-value pairs that already exist in the `appdata` field.
+5. Applications **MAY** store any object data in the `appdata` field.
+6. Applications **SHOULD** namespace keys that they use to avoid name conflicts in the `appdata` i.e. `"agnai/voice": /* ... */` or `"agnai_voice": /* ... */` or `"agnai": { "voice": /* ... */ }"`.
 
 #### `entries` 
 
@@ -326,6 +429,7 @@ Stores the entries contained in the lorebook. This **MUST** be an array of `Char
 
 
 ## CharacterEntry Object
+This object handles lorebook entries in a character book (lorebook).
 ```ts
 // New in Prom V3
 interface CharacterEntry {
@@ -348,7 +452,9 @@ interface CharacterEntry {
     comment?: string // For ST/RisuAI
 
     position?: 'before_char' | 'after_char' | 'before_an' | 'after_an' 
-    extensions: Record<string, any>
+    external?: {
+        appdata: Record<string, any>
+    }
 }
 ```
 
@@ -414,6 +520,43 @@ The name of the entry. This **MUST** be a string. This value **SHOULD NOT** be u
 
 Stores where to insert the entry at. This **MUST** be either: `'before_char'`, `'after_char'`, `'before_an'`, `'after_an'`.
 
-#### `extensions` 
+#### `external` 
 
-Stores additional information from content creators, sites, character editors, apps, etc. Same rule applies here as `extensions` in [CharacterCardV3_1](#extensions) and [CharacterBookV2](#extensions-1).
+Stores additional information from content creators, sites, character editors, apps, etc. Same rule applies here as `external` in [CharacterBookV2](#external-1).
+
+## CharacterAsset Object
+This object handles remote character assets.
+```ts
+interface CharacterAsset {
+    type: string // file type (MMD, PNG, MP3)
+    url: string
+    package: string // name of the asset
+}
+```
+
+1. Applications **MAY** ask the user what assets to obtain remotely.
+2. Applications **SHOULD** only grab assets assets that it supports than list all of them but this is just a recommendation.
+
+> FYI that this is for original creations. Including copyrighted works may result in DMCAs from corporations or others without explicit approval.
+
+### Field Description
+
+#### `type`
+
+Stores the asset type. This **MUST** be a string. Applications **SHOULD** dictate what types they accept here, but the common that **SHOULD** apply are `sprites`, `bg` (background), `bgm` (music), `sfx` (sound effects), and `models`.
+
+1. Applications **MUST** state what file types they support for given tags.
+2. Applications **MAY** impose restrictions of importation, however this **MAY** break some ZIPs unnecessarily.
+
+#### `url`
+
+Stores the URL to access the content. This **MUST** be a string. 
+
+1. Applications **MAY** but **SHOULD** reject HTTP links.
+2. Applications **MUST** warn the user about accessing or obtaining remote content for malicious payloads.
+3. Applications **SHOULD** reject any external code dependencies unless there is a "genuine" reason for code.
+4. Applications **SHOULD** alert the user if a link is inaccessible and skip the asset.
+
+#### `package`
+
+Stores the name of the package and file extension (Sprites.zip). Used for download validation. This **MUST** be a string.
