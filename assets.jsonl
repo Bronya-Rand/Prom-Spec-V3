@@ -1,0 +1,4 @@
+{"type": "sprites", "path": "assets/sprites"},
+{"type": "sprites", "path": "assets/sprites_alt", "name": "beach outfit"},
+{"type": "bg", "path": "assets/bg"},
+{"type": "bgm", "path": "assets/bgm"},
